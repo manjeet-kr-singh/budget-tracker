@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/layout :: head"></head>
+
+<body>
+
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <div th:replace="fragments/layout :: sidebar"></div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+
+            <nav th:replace="fragments/layout :: navbar"></nav>
+
+            <div class="container-fluid my-4 px-4">
+
+                <!-- Header & Actions -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Transactions</h2>
+                    <div>
+                        <button type="button" class="btn btn-success me-2" data-bs-toggle="modal"
+                            data-bs-target="#importModal">
+                            <i class="fas fa-file-import"></i> Import Excel
+                        </button>
+                        <a th:href="@{/export}" class="btn btn-outline-success me-2"><i class="fas fa-file-csv"></i>
+                            Export CSV</a>
+                        <a th:href="@{/showNewExpenseForm}" class="btn btn-primary"><i class="fas fa-plus"></i> Add
+                            New</a>
+                    </div>
+                </div>
+
+                <!-- Alerts -->
+                <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <span th:text="${message}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <span th:text="${error}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Filters -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light cursor-pointer" data-bs-toggle="collapse"
+                        data-bs-target="#filterCollapse">
+                        <i class="fas fa-filter me-2"></i> Filters & Search
+                    </div>
+                    <div id="filterCollapse" class="collapse show">
+                        <div class="card-body">
+                            <form th:action="@{/transactions}" method="get" class="row g-3">
+                                <input type="hidden" name="sort" th:value="${sort}">
+                                <input type="hidden" name="dir" th:value="${dir}">
+
+                                <div class="col-md-3">
+                                    <label class="form-label">Search</label>
+                                    <input type="text" name="keyword" class="form-control" placeholder="Description..."
+                                        th:value="${keyword}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Category</label>
+                                    <select name="category" class="form-select">
+                                        <option value="">All</option>
+                                        <option th:each="cat : ${categories}" th:value="${cat.displayName}"
+                                            th:text="${cat.displayName}" th:selected="${category == cat.displayName}">
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Payment Mode</label>
+                                    <select name="paymentMode" class="form-select">
+                                        <option value="">All</option>
+                                        <option th:each="mode : ${paymentModes}" th:value="${mode.displayName}"
+                                            th:text="${mode.displayName}"
+                                            th:selected="${paymentMode == mode.displayName}"></option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Start Date</label>
+                                    <input type="date" name="startDate" class="form-control" th:value="${startDate}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">End Date</label>
+                                    <input type="date" name="endDate" class="form-control" th:value="${endDate}">
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100"><i
+                                            class="fas fa-search"></i></button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="transactions" class="table-responsive">
+                    <table class="table table-striped table-hover table-bordered align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>
+                                    <a class="text-white text-decoration-none"
+                                        th:href="@{/transactions(page=${currentPage}, sort='date', dir=${sort == 'date' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}">
+                                        Date <i class="fas"
+                                            th:classappend="${sort == 'date' ? (dir == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}"></i>
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none"
+                                        th:href="@{/transactions(page=${currentPage}, sort='description', dir=${sort == 'description' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}">
+                                        Description <i class="fas"
+                                            th:classappend="${sort == 'description' ? (dir == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}"></i>
+                                    </a>
+                                </th>
+                                <th>Category</th>
+                                <th>Payment Mode</th>
+                                <th>
+                                    <a class="text-white text-decoration-none"
+                                        th:href="@{/transactions(page=${currentPage}, sort='amount', dir=${sort == 'amount' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}">
+                                        Amount <i class="fas"
+                                            th:classappend="${sort == 'amount' ? (dir == 'asc' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort'}"></i>
+                                    </a>
+                                </th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="expense : ${expenses}">
+                                <td th:text="${expense.date}"></td>
+                                <td th:text="${expense.description}"></td>
+                                <td><span class="badge bg-info text-dark" th:text="${expense.category}"></span></td>
+                                <td th:text="${expense.paymentMode}"></td>
+                                <td><span class="currency-symbol">$</span> <span th:text="${expense.amount}"></span>
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-info btn-sm text-white" data-bs-toggle="modal"
+                                        data-bs-target="#detailsModal"
+                                        th:attr="data-desc=${expense.description}, data-amount=${expense.amount}, data-date=${expense.date}, data-cat=${expense.category}, data-mode=${expense.paymentMode}, data-id=${expense.id}">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a th:href="@{/showEditExpenseForm/{id}(id=${expense.id})}"
+                                        class="btn btn-warning btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#deleteModal" th:attr="data-id=${expense.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(expenses)}">
+                                <td colspan="6" class="text-center py-4">No transactions found.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Page navigation" th:if="${totalPages > 1}">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/transactions(page=${currentPage - 1}, sort=${sort}, dir=${dir}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}">Previous</a>
+                        </li>
+                        <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                            th:classappend="${currentPage == i} ? 'active'">
+                            <a class="page-link"
+                                th:href="@{/transactions(page=${i}, sort=${sort}, dir=${dir}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}"
+                                th:text="${i + 1}">1</a>
+                        </li>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link"
+                                th:href="@{/transactions(page=${currentPage + 1}, sort=${sort}, dir=${dir}, keyword=${keyword}, category=${category}, paymentMode=${paymentMode}, startDate=${startDate}, endDate=${endDate})}">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Details Modal -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transaction Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>ID:</strong> <span id="detailId"></span></p>
+                    <p><strong>Description:</strong> <span id="detailDesc"></span></p>
+                    <p><strong>Amount:</strong> $<span id="detailAmount"></span></p>
+                    <p><strong>Date:</strong> <span id="detailDate"></span></p>
+                    <p><strong>Category:</strong> <span id="detailCat"></span></p>
+                    <p><strong>Payment Mode:</strong> <span id="detailMode"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete this expense?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form id="deleteForm" method="post">
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Import Transactions</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Import expenses from an Excel file.</p>
+                    <div class="mb-4">
+                        <h6>Step 1: Download Template</h6>
+                        <p class="text-muted small">Use this template to format your data correctly. It includes
+                            dropdowns for Category and Payment Mode.</p>
+                        <a href="/downloadTemplate" class="btn btn-outline-primary btn-sm"><i
+                                class="fas fa-download"></i> Download Template</a>
+                    </div>
+                    <hr>
+                    <div class="mb-2">
+                        <h6>Step 2: Upload File</h6>
+                        <form method="post" action="/import" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <input class="form-control" type="file" name="file" accept=".xlsx" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success">Upload & Import</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/layout :: scripts"></div>
+    <script>
+        // Delete Modal Logic
+        var deleteModal = document.getElementById('deleteModal');
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var id = button.getAttribute('data-id');
+                var form = deleteModal.querySelector('#deleteForm');
+                form.action = '/deleteExpense/' + id;
+            });
+        }
+
+        // Details Modal Logic
+        var detailsModal = document.getElementById('detailsModal');
+        if (detailsModal) {
+            detailsModal.addEventListener('show.bs.modal', function (event) {
+                var btn = event.relatedTarget;
+                detailsModal.querySelector('#detailId').textContent = btn.getAttribute('data-id');
+                detailsModal.querySelector('#detailDesc').textContent = btn.getAttribute('data-desc');
+                detailsModal.querySelector('#detailAmount').textContent = btn.getAttribute('data-amount');
+                detailsModal.querySelector('#detailDate').textContent = btn.getAttribute('data-date');
+                detailsModal.querySelector('#detailCat').textContent = btn.getAttribute('data-cat');
+                detailsModal.querySelector('#detailMode').textContent = btn.getAttribute('data-mode');
+            });
+        }
+    </script>
+</body>
+
+</html>

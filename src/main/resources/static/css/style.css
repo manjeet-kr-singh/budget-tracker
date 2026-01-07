@@ -1,0 +1,168 @@
+/* Sidebar Styles */
+#wrapper {
+    overflow-x: hidden;
+    display: flex;
+    min-height: 100vh;
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -15rem;
+    -webkit-transition: margin .25s ease-out;
+    -moz-transition: margin .25s ease-out;
+    -o-transition: margin .25s ease-out;
+    transition: margin .25s ease-out;
+    background-color: #343a40;
+    /* Dark background */
+    color: white;
+    width: 15rem;
+    flex-shrink: 0;
+}
+
+#sidebar-wrapper .sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#sidebar-wrapper .list-group {
+    width: 15rem;
+}
+
+#sidebar-wrapper .list-group-item {
+    background-color: #343a40;
+    color: rgba(255, 255, 255, 0.8);
+    border: none;
+    padding: 1rem 1.25rem;
+}
+
+#sidebar-wrapper .list-group-item:hover {
+    background-color: #495057;
+    color: #fff;
+}
+
+#sidebar-wrapper .list-group-item.active {
+    background-color: #0d6efd;
+    color: #fff;
+    font-weight: bold;
+}
+
+#page-content-wrapper {
+    min-width: 100vw;
+    flex-grow: 1;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -15rem;
+    }
+}
+
+.sidebar-icon {
+    width: 25px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+/* --- Dark Mode Styles --- */
+
+/* Body */
+body.dark-mode {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+}
+
+/* Navbar */
+body.dark-mode .navbar {
+    background-color: #1e1e1e !important;
+    border-bottom: 1px solid #333 !important;
+}
+
+body.dark-mode .navbar-light .navbar-toggler-icon {
+    filter: invert(1);
+    /* Invert toggle icon color */
+}
+
+/* Cards */
+body.dark-mode .card {
+    background-color: #1e1e1e !important;
+    border-color: #333;
+    color: #fff;
+}
+
+body.dark-mode .card-header {
+    background-color: #2c2c2c !important;
+    border-bottom-color: #333;
+    color: #fff;
+}
+
+/* Tables */
+body.dark-mode .table {
+    color: #fff;
+    border-color: #333;
+}
+
+body.dark-mode .table-striped>tbody>tr:nth-of-type(odd) {
+    background-color: rgba(255, 255, 255, 0.05);
+    /* Slight lightening for stripe */
+}
+
+body.dark-mode .table-hover>tbody>tr:hover {
+    background-color: rgba(255, 255, 255, 0.075);
+}
+
+body.dark-mode .table-dark {
+    /* Keep header dark but maybe adjust if needed */
+}
+
+/* Forms */
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #2c2c2c;
+    border-color: #444;
+    color: #fff;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    background-color: #333;
+    color: #fff;
+    border-color: #0d6efd;
+}
+
+/* Modals */
+body.dark-mode .modal-content {
+    background-color: #1e1e1e;
+    color: #fff;
+    border-color: #333;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    border-color: #333;
+}
+
+body.dark-mode .btn-close {
+    filter: invert(1);
+}
+
+/* List Group (if used outside sidebar) */
+body.dark-mode .list-group-item {
+    background-color: #1e1e1e;
+    color: #fff;
+    border-color: #333;
+}

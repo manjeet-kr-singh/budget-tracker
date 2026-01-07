@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="fragments/layout :: head"></head>
+
+<body>
+
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <div th:replace="fragments/layout :: sidebar"></div>
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+
+            <nav th:replace="fragments/layout :: navbar"></nav>
+
+            <div class="container-fluid my-4 px-4">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2>Financial Reports</h2>
+                    <div class="d-flex align-items-center">
+                        <label class="me-2 fw-bold">Year:</label>
+                        <select id="yearSelector" class="form-select w-auto">
+                            <!-- Populated by JS, defaulting to current year -->
+                            <option th:value="${currentYear}" th:text="${currentYear}" selected></option>
+                            <option th:value="${currentYear - 1}" th:text="${currentYear - 1}"></option>
+                            <option th:value="${currentYear - 2}" th:text="${currentYear - 2}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-primary text-white h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">Total Spent in <span class="selected-year-text"></span></h5>
+                                <h2 class="display-6 fw-bold"><span class="currency-symbol">$</span> <span
+                                        id="totalYearlySpend">0.00</span></h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-success text-white h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">Average Monthly Spend</h5>
+                                <h2 class="display-6 fw-bold"><span class="currency-symbol">$</span> <span
+                                        id="avgMonthlySpend">0.00</span></h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div class="row mb-4">
+                    <!-- Monthly Trend -->
+                    <div class="col-lg-8 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold">
+                                Monthly Spending Trend
+                            </div>
+                            <div class="card-body">
+                                <canvas id="monthlyTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Mode -->
+                    <div class="col-lg-4 mb-4">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold">
+                                Payment Mode Split
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height:25vh;">
+                                    <canvas id="paymentModeChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div class="row">
+                    <!-- Category Split -->
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-white fw-bold">
+                                Expenses by Category
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height:40vh;">
+                                    <canvas id="categoryChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="fragments/layout :: scripts"></div>
+    <!-- Page Specific Script -->
+    <script>
+        $(document).ready(function () {
+            const yearSelector = $('#yearSelector');
+            const totalYearlyDisplay = $('#totalYearlySpend');
+            const avgMonthlyDisplay = $('#avgMonthlySpend');
+            const yearText = $('.selected-year-text');
+
+            let monthlyChart, paymentChart, categoryChart;
+
+            function loadReportData(year) {
+                yearText.text(year);
+
+                $.get('/api/reports/data?year=' + year, function (data) {
+
+                    // Update Summaries
+                    totalYearlyDisplay.text(data.totalSpentYear.toFixed(2));
+                    avgMonthlyDisplay.text(data.averageMonthlySpend.toFixed(2));
+
+                    // 1. Monthly Trend Chart
+                    const monthlyCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+                    if (monthlyChart) monthlyChart.destroy();
+                    monthlyChart = new Chart(monthlyCtx, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(data.monthlyTrend),
+                            datasets: [{
+                                label: 'Spending',
+                                data: Object.values(data.monthlyTrend),
+                                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: { scales: { y: { beginAtZero: true } }, responsive: true }
+                    });
+
+                    // 2. Payment Mode Chart
+                    const paymentCtx = document.getElementById('paymentModeChart').getContext('2d');
+                    if (paymentChart) paymentChart.destroy();
+                    paymentChart = new Chart(paymentCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(data.paymentModeSplit),
+                            datasets: [{
+                                data: Object.values(data.paymentModeSplit),
+                                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                            }]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false }
+                    });
+
+                    // 3. Category Chart
+                    const catCtx = document.getElementById('categoryChart').getContext('2d');
+                    if (categoryChart) categoryChart.destroy();
+                    categoryChart = new Chart(catCtx, {
+                        type: 'bar', // Changed to Horizontal Bar for better readability if many categories
+                        data: {
+                            labels: Object.keys(data.categorySplit),
+                            datasets: [{
+                                label: 'Amount',
+                                data: Object.values(data.categorySplit),
+                                backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                            }]
+                        },
+                        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false }
+                    });
+                });
+            }
+
+            // Initial Load
+            loadReportData(yearSelector.val());
+
+            // On Change
+            yearSelector.change(function () {
+                loadReportData($(this).val());
+            });
+        });
+    </script>
+</body>
+
+</html>
