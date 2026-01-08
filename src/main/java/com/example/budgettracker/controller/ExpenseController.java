@@ -31,7 +31,6 @@ public class ExpenseController {
     private final ExpenseService expenseService;
 
     // --- MVC Endpoints for Thymeleaf Views ---
-
     @GetMapping("/")
     public String home(Model model) {
         List<ExpenseDTO> expenses = expenseService.getAllExpenses(null);
@@ -142,7 +141,7 @@ public class ExpenseController {
         return "edit-expense";
     }
 
-    @GetMapping("/deleteExpense/{id}")
+    @PostMapping("/deleteExpense/{id}")
     public String deleteExpense(@PathVariable(value = "id") Long id) {
         expenseService.deleteExpense(id);
         return "redirect:/transactions";
