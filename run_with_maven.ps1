@@ -31,13 +31,12 @@ else {
 
 # Add to Path temporarily
 # Set JAVA_HOME to JDK if detected (Maven needs JDK)
-$jdkPath = "C:\Program Files\Java\jdk1.8.0_333"
-if (Test-Path $jdkPath) {
-    $env:JAVA_HOME = $jdkPath
-    Write-Host "Setting JAVA_HOME to $jdkPath" -ForegroundColor Green
-}
-else {
-    $env:JAVA_HOME = $env:JAVA_HOME # Fallback
+# Set JAVA_HOME to JDK if detected (Maven needs JDK)
+# Try to find Java 17 if JAVA_HOME is not set or not 17
+if ($env:JAVA_HOME) {
+    Write-Host "Using system JAVA_HOME: $env:JAVA_HOME" -ForegroundColor Green
+} else {
+    Write-Host "JAVA_HOME not set. Please ensure Java 17 is installed and JAVA_HOME is set." -ForegroundColor Yellow
 }
 
 $env:Path = "$mavenBin;$env:JAVA_HOME\bin;$env:Path"

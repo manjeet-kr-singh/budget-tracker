@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.budgettracker.util.ExcelHelper;
 import com.example.budgettracker.entity.Expense;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -101,7 +101,7 @@ public class ExpenseController {
     }
 
     @GetMapping("/export")
-    public void exportToCsv(javax.servlet.http.HttpServletResponse response) throws java.io.IOException {
+    public void exportToCsv(jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
         response.setContentType("text/csv; charset=utf-8");
         response.setCharacterEncoding("UTF-8"); // Ensure UTF-8
         String headerKey = "Content-Disposition";
