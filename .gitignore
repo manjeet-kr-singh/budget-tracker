@@ -22,3 +22,7 @@ hs_err_pid*
 *.iml
 .DS_Store
 thumbs.db
+
+/data/
+*.mv.db
+*.trace.db
