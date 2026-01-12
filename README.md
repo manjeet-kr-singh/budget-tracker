@@ -4,6 +4,8 @@ Daily Budget Tracker and Expense Planner application built with Spring Boot.
 
 ## Features
 
+- **User Authentication**: Secure Login and Registration.
+- **Data Isolation**: Users can only manage their own data.
 - **Dashboard**: Overview of your financial status.
 - **Transactions**: Add, edit, and delete income and expense records.
 - **Import/Export**: 
@@ -14,16 +16,17 @@ Daily Budget Tracker and Expense Planner application built with Spring Boot.
 
 ## Technology Stack
 
-- **Java**: JDK 1.8
-- **Framework**: Spring Boot 2.7.18
+- **Java**: JDK 17
+- **Framework**: Spring Boot 3.2.2
+- **Security**: Spring Security 6
 - **Build Tool**: Maven
-- **Database**: H2 In-Memory Database
-- **Template Engine**: Thymeleaf
+- **Database**: H2 File-Based Database (Persisted)
+- **Template Engine**: Thymeleaf (with Security Extras)
 - **Other**: Lombok, Apache POI (for Excel processing)
 
 ## Prerequisites
 
-- Java Development Kit (JDK) 8 installed.
+- Java Development Kit (JDK) 17 installed.
 
 ## Getting Started
 
@@ -70,6 +73,6 @@ To access the H2 in-memory database console:
 
 - **URL**: [http://localhost:8080/h2-console](http://localhost:8080/h2-console)
 - **Driver Class**: `org.h2.Driver`
-- **JDBC URL**: `jdbc:h2:mem:budget_tracker`
+- **JDBC URL**: `jdbc:h2:file:./data/budget-tracker-db`
 - **User Name**: `sa`
 - **Password**: `password`

@@ -21,26 +21,41 @@ import java.util.stream.Collectors;
 public class ExpenseServiceImpl implements ExpenseService {
 
     private final ExpenseRepository expenseRepository;
+    private final com.example.budgettracker.repository.UserRepository userRepository;
+
+    private com.example.budgettracker.entity.User getCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
     @Override
     public void saveExpense(ExpenseDTO expenseDTO) {
         Expense expense = mapToEntity(expenseDTO);
+        expense.setUser(getCurrentUser());
         expenseRepository.save(expense);
     }
 
     @Override
     public void saveAll(List<Expense> expenses) {
+        // Only for bulk import (needs special handling, skipping for now or assign to
+        // current user)
+        // For now, assign all to current user
+        com.example.budgettracker.entity.User user = getCurrentUser();
+        expenses.forEach(e -> e.setUser(user));
         expenseRepository.saveAll(expenses);
     }
 
     @Override
     public List<ExpenseDTO> getAllExpenses(String keyword) {
+        com.example.budgettracker.entity.User user = getCurrentUser();
         if (keyword != null) {
-            return expenseRepository.findByDescriptionContainingIgnoreCase(keyword).stream()
+            return expenseRepository.findByDescriptionContainingIgnoreCaseAndUser(keyword, user).stream()
                     .map(this::mapToDTO)
                     .collect(Collectors.toList());
         }
-        return expenseRepository.findAll().stream()
+        return expenseRepository.findByUser(user).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
     }
@@ -50,6 +65,9 @@ public class ExpenseServiceImpl implements ExpenseService {
             LocalDate startDate, LocalDate endDate, Pageable pageable) {
         Specification<Expense> spec = ExpenseSpecification.filterExpenses(keyword, category, paymentMode, startDate,
                 endDate);
+        // Add User filter
+        spec = spec.and((root, query, criteriaBuilder) -> criteriaBuilder.equal(root.get("user"), getCurrentUser()));
+
         return expenseRepository.findAll(spec, pageable).map(this::mapToDTO);
     }
 
@@ -57,6 +75,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     public ExpenseDTO getExpenseById(Long id) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
+        // Ensure user owns this expense
+        if (!expense.getUser().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Access Denied");
+        }
         return mapToDTO(expense);
     }
 
@@ -64,6 +86,10 @@ public class ExpenseServiceImpl implements ExpenseService {
     public ExpenseDTO updateExpense(Long id, ExpenseDTO expenseDTO) {
         Expense expense = expenseRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Expense not found"));
+
+        if (!expense.getUser().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Access Denied");
+        }
 
         expense.setDescription(expenseDTO.getDescription());
         expense.setAmount(expenseDTO.getAmount());
@@ -78,6 +104,11 @@ public class ExpenseServiceImpl implements ExpenseService {
 
     @Override
     public void deleteExpense(Long id) {
+        Expense expense = expenseRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+        if (!expense.getUser().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Access Denied");
+        }
         expenseRepository.deleteById(id);
     }
 

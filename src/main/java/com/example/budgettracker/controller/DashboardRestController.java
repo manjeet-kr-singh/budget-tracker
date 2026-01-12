@@ -24,6 +24,14 @@ public class DashboardRestController {
 
         private final ExpenseRepository expenseRepository;
         private final BudgetService budgetService;
+        private final com.example.budgettracker.repository.UserRepository userRepository;
+
+        private com.example.budgettracker.entity.User getCurrentUser() {
+                String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                                .getAuthentication().getName();
+                return userRepository.findByUsername(username)
+                                .orElseThrow(() -> new RuntimeException("User not found"));
+        }
 
         @GetMapping("/stats")
         public ResponseEntity<DashboardDataDTO> getDashboardStats(
@@ -36,9 +44,11 @@ public class DashboardRestController {
                 LocalDate startOfMonth = yearMonth.atDay(1);
                 LocalDate endOfMonth = yearMonth.atEndOfMonth();
                 LocalDate today = LocalDate.now();
+                com.example.budgettracker.entity.User user = getCurrentUser();
 
                 // 1. Total Expenses (This Month)
-                List<Expense> monthlyExpenses = expenseRepository.findByDateBetween(startOfMonth, endOfMonth);
+                List<Expense> monthlyExpenses = expenseRepository.findByDateBetweenAndUser(startOfMonth, endOfMonth,
+                                user);
                 BigDecimal totalExpense = monthlyExpenses.stream()
                                 .map(Expense::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -47,7 +57,7 @@ public class DashboardRestController {
                 // Only calculate if the requested month includes Today, or just query for
                 // 'refDate' if intent is specific day?
                 // Requirement says "Today's total". Usually implies "Real Today".
-                List<Expense> todaysExpenses = expenseRepository.findByDate(today);
+                List<Expense> todaysExpenses = expenseRepository.findByDateAndUser(today, user);
                 BigDecimal todaysExpense = todaysExpenses.stream()
                                 .map(Expense::getAmount)
                                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -61,16 +71,16 @@ public class DashboardRestController {
 
                 // 5. Chart Data
                 Map<String, BigDecimal> categorySplit = new HashMap<>();
-                expenseRepository.sumAmountByCategory(startOfMonth, endOfMonth)
+                expenseRepository.sumAmountByCategory(startOfMonth, endOfMonth, user)
                                 .forEach(row -> categorySplit.put((String) row[0], (BigDecimal) row[1]));
 
                 Map<String, BigDecimal> paymentModeSplit = new HashMap<>();
-                expenseRepository.sumAmountByPaymentMode(startOfMonth, endOfMonth)
+                expenseRepository.sumAmountByPaymentMode(startOfMonth, endOfMonth, user)
                                 .forEach(row -> paymentModeSplit.put((String) row[0], (BigDecimal) row[1]));
 
                 // Trend (TreeMap for sorting by date keys)
                 Map<String, BigDecimal> dailyTrend = new TreeMap<>();
-                expenseRepository.sumAmountByDate(startOfMonth, endOfMonth)
+                expenseRepository.sumAmountByDate(startOfMonth, endOfMonth, user)
                                 .forEach(row -> dailyTrend.put(row[0].toString(), (BigDecimal) row[1]));
 
                 DashboardDataDTO data = DashboardDataDTO.builder()

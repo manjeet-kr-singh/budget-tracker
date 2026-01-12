@@ -24,6 +24,14 @@ import java.util.Map;
 public class ReportController {
 
     private final ExpenseRepository expenseRepository;
+    private final com.example.budgettracker.repository.UserRepository userRepository;
+
+    private com.example.budgettracker.entity.User getCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
     @GetMapping("/reports") // This overrides the one in ExpenseController if priority matches, but better
                             // to remove it from there later.
@@ -38,6 +46,7 @@ public class ReportController {
     public ResponseEntity<ReportDataDTO> getReportData(@RequestParam int year) {
         LocalDate startOfYear = LocalDate.of(year, 1, 1);
         LocalDate endOfYear = LocalDate.of(year, 12, 31);
+        com.example.budgettracker.entity.User user = getCurrentUser();
 
         // 1. Monthly Trend
         Map<String, BigDecimal> monthlyTrend = new LinkedHashMap<>();
@@ -46,7 +55,7 @@ public class ReportController {
             monthlyTrend.put(month.getDisplayName(TextStyle.SHORT, Locale.ENGLISH), BigDecimal.ZERO);
         }
 
-        List<Object[]> monthData = expenseRepository.sumAmountByMonth(year);
+        List<Object[]> monthData = expenseRepository.sumAmountByMonth(year, user);
         for (Object[] row : monthData) {
             int monthIndex = (int) row[0]; // 1-12
             BigDecimal amount = (BigDecimal) row[1];
@@ -56,12 +65,12 @@ public class ReportController {
 
         // 2. Category Split (Reuse existing query with yearly range)
         Map<String, BigDecimal> categorySplit = new LinkedHashMap<>();
-        expenseRepository.sumAmountByCategory(startOfYear, endOfYear)
+        expenseRepository.sumAmountByCategory(startOfYear, endOfYear, user)
                 .forEach(row -> categorySplit.put((String) row[0], (BigDecimal) row[1]));
 
         // 3. Payment Mode Split
         Map<String, BigDecimal> paymentModeSplit = new LinkedHashMap<>();
-        expenseRepository.sumAmountByPaymentMode(startOfYear, endOfYear)
+        expenseRepository.sumAmountByPaymentMode(startOfYear, endOfYear, user)
                 .forEach(row -> paymentModeSplit.put((String) row[0], (BigDecimal) row[1]));
 
         // 4. Totals

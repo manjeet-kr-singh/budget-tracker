@@ -30,6 +30,7 @@ public class Budget {
     @Column(name = "budget_year", nullable = false)
     private Integer year;
 
-    // We can add month/year columns later for historical budgets,
-    // for now we assume this applies to current/all months to get started quickly.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    private User user;
 }

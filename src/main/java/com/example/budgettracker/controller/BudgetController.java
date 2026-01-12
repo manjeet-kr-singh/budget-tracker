@@ -1,7 +1,6 @@
 package com.example.budgettracker.controller;
 
 import com.example.budgettracker.dto.BudgetStatusDTO;
-import com.example.budgettracker.entity.Budget;
 import com.example.budgettracker.service.BudgetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

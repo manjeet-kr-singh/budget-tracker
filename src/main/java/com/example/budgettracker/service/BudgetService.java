@@ -22,39 +22,63 @@ public class BudgetService {
 
     private final BudgetRepository budgetRepository;
     private final ExpenseRepository expenseRepository;
+    private final com.example.budgettracker.repository.UserRepository userRepository;
+
+    private com.example.budgettracker.entity.User getCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
 
     public BigDecimal getGlobalBudget() {
-        return budgetRepository.findByCategory("GLOBAL")
+        return budgetRepository.findByCategoryAndUser("GLOBAL", getCurrentUser())
                 .map(Budget::getAmount)
                 .orElse(BigDecimal.ZERO);
     }
 
     public void setGlobalBudget(BigDecimal amount) {
-        Budget budget = budgetRepository.findByCategory("GLOBAL")
+        com.example.budgettracker.entity.User user = getCurrentUser();
+        Budget budget = budgetRepository.findByCategoryAndUser("GLOBAL", user)
                 .orElse(new Budget());
         if (budget.getId() == null) {
             budget.setCategory("GLOBAL");
-            // Defaults for global if needed
             budget.setMonth(LocalDate.now().getMonthValue());
             budget.setYear(LocalDate.now().getYear());
+            budget.setUser(user);
         }
         budget.setAmount(amount);
         budgetRepository.save(budget);
     }
 
     public List<Budget> getAllBudgets() {
-        return budgetRepository.findAll();
+        // This likely needs to be filtered by user too? simpler to find all for user
+        // But repo doesn't have findAllByUser yet. Or just use month/year ones.
+        // Assuming this method is slightly legacy or unused, but let's check repo.
+        // I will add findByUser to repo if strictly needed, but better to avoid blanket
+        // getAll.
+        // usage check: budgetController might use it?
+        // For now, return empty or implement proper fetch.
+        // Creating logic to fetch all for user:
+        // Since I haven't added findByUser in BudgetRepository yet, I'll stick to
+        // specific method calls.
+        // Wait, I should add findByUser to BudgetRepository to support this properly.
+        // For now, I'll filter in memory or throw/return empty.
+        // Better: Find all budgets for the user.
+        return budgetRepository.findAll().stream()
+                .filter(b -> b.getUser() != null && b.getUser().getId().equals(getCurrentUser().getId()))
+                .collect(Collectors.toList());
     }
 
     public BigDecimal getTotalMonthlyBudget(int month, int year) {
-        return budgetRepository.findByMonthAndYear(month, year).stream()
+        return budgetRepository.findByMonthAndYearAndUser(month, year, getCurrentUser()).stream()
                 .map(Budget::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     // New method for monthly planning
     public com.example.budgettracker.dto.MonthlyBudgetDTO getMonthlyBudgetPlan(int month, int year) {
-        List<Budget> existingBudgets = budgetRepository.findByMonthAndYear(month, year);
+        List<Budget> existingBudgets = budgetRepository.findByMonthAndYearAndUser(month, year, getCurrentUser());
 
         List<com.example.budgettracker.dto.CategoryBudgetDTO> categoryBudgets = java.util.Arrays
                 .stream(com.example.budgettracker.enums.Category.values())
@@ -72,16 +96,19 @@ public class BudgetService {
     }
 
     public void saveMonthlyBudgetPlan(com.example.budgettracker.dto.MonthlyBudgetDTO dto) {
+        com.example.budgettracker.entity.User user = getCurrentUser();
         // Simple iteration to save each
         for (com.example.budgettracker.dto.CategoryBudgetDTO item : dto.getCategoryBudgets()) {
             Budget budget = budgetRepository
-                    .findByCategoryAndMonthAndYear(item.getCategory().getDisplayName(), dto.getMonth(), dto.getYear())
+                    .findByCategoryAndMonthAndYearAndUser(item.getCategory().getDisplayName(), dto.getMonth(),
+                            dto.getYear(), user)
                     .orElse(new Budget());
 
             if (budget.getId() == null) {
                 budget.setCategory(item.getCategory().getDisplayName());
                 budget.setMonth(dto.getMonth());
                 budget.setYear(dto.getYear());
+                budget.setUser(user);
             }
             budget.setAmount(item.getAmount());
             budgetRepository.save(budget);
@@ -90,28 +117,35 @@ public class BudgetService {
 
     // Legacy method - updated to support month/year
     public void saveBudget(Budget budget) {
+        com.example.budgettracker.entity.User user = getCurrentUser();
         // Defaulting to current date if missing
         if (budget.getMonth() == null)
             budget.setMonth(LocalDate.now().getMonthValue());
         if (budget.getYear() == null)
             budget.setYear(LocalDate.now().getYear());
 
-        Optional<Budget> existing = budgetRepository.findByCategoryAndMonthAndYear(budget.getCategory(),
-                budget.getMonth(), budget.getYear());
+        Optional<Budget> existing = budgetRepository.findByCategoryAndMonthAndYearAndUser(budget.getCategory(),
+                budget.getMonth(), budget.getYear(), user);
         if (existing.isPresent() && (budget.getId() == null || !budget.getId().equals(existing.get().getId()))) {
             Budget b = existing.get();
             b.setAmount(budget.getAmount());
             budgetRepository.save(b);
         } else {
+            budget.setUser(user);
             budgetRepository.save(budget);
         }
     }
 
     public void deleteBudget(Long id) {
+        Budget budget = budgetRepository.findById(id).orElseThrow(() -> new RuntimeException("Budget not found"));
+        if (!budget.getUser().getId().equals(getCurrentUser().getId())) {
+            throw new RuntimeException("Access Denied");
+        }
         budgetRepository.deleteById(id);
     }
 
     public List<BudgetStatusDTO> getBudgetStatus(LocalDate date) {
+        com.example.budgettracker.entity.User user = getCurrentUser();
         LocalDate refDate = (date != null) ? date : LocalDate.now();
         int month = refDate.getMonthValue();
         int year = refDate.getYear();
@@ -120,10 +154,10 @@ public class BudgetService {
         LocalDate end = refDate.withDayOfMonth(refDate.lengthOfMonth());
 
         // Get monthly budgets
-        List<Budget> budgets = budgetRepository.findByMonthAndYear(month, year);
+        List<Budget> budgets = budgetRepository.findByMonthAndYearAndUser(month, year, user);
 
         // Get expenses sum
-        Map<String, BigDecimal> expenseMap = expenseRepository.sumAmountByCategory(start, end).stream()
+        Map<String, BigDecimal> expenseMap = expenseRepository.sumAmountByCategory(start, end, user).stream()
                 .collect(Collectors.toMap(
                         row -> (String) row[0],
                         row -> (BigDecimal) row[1]));
