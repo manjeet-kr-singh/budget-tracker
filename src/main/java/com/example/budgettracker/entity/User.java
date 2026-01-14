@@ -26,6 +26,11 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    private String fullName;
+    private String email;
+    private String mobile;
+    private String profilePicture;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;

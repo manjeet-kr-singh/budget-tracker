@@ -44,13 +44,29 @@
         <div class="container-fluid">
             <button class="btn btn-primary" id="sidebarToggle"><i class="fas fa-bars"></i></button>
 
-            <div class="ms-auto d-flex align-items-center">
-                <span class="me-3" sec:authorize="isAuthenticated()">
-                    Welcome, <span sec:authentication="name">User</span>
-                </span>
-                <form th:action="@{/logout}" method="post" sec:authorize="isAuthenticated()">
-                    <button class="btn btn-outline-danger btn-sm" type="submit">Logout</button>
-                </form>
+            <div class="dropdown" sec:authorize="isAuthenticated()">
+                <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
+                    data-bs-toggle="dropdown" aria-expanded="false">
+                    <img th:if="${#authentication.principal.profilePicture != null}"
+                        th:src="@{'/user-photos/' + ${#authentication.principal.id} + '/' + ${#authentication.principal.profilePicture}}"
+                        class="rounded-circle me-2" height="30" width="30" style="object-fit: cover;" alt="User">
+                    <i th:unless="${#authentication.principal.profilePicture != null}"
+                        class="fas fa-user-circle fa-lg me-2"></i>
+                    <span sec:authentication="principal.displayName">User</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                    <li><a class="dropdown-item" th:href="@{/profile}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li>
+                        <form th:action="@{/logout}" method="post" class="d-inline">
+                            <button class="dropdown-item text-danger" type="submit"
+                                style="width: 100%; text-align: left;"><i
+                                    class="fas fa-sign-out-alt me-2"></i>Logout</button>
+                        </form>
+                    </li>
+                </ul>
             </div>
         </div>
     </nav>

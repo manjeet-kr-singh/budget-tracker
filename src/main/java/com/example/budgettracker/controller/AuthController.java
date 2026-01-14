@@ -30,7 +30,16 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public String registerUser(@ModelAttribute("user") User user) {
+    public String registerUser(@ModelAttribute("user") User user, org.springframework.validation.BindingResult result,
+            Model model) {
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            result.rejectValue("username", "error.user", "Username already exists");
+        }
+
+        if (result.hasErrors()) {
+            return "register";
+        }
+
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setRole(Role.ROLE_USER); // Default role
         userRepository.save(user);
