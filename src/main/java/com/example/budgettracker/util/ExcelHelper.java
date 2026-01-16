@@ -59,9 +59,9 @@ public class ExcelHelper {
                 categories.add(c.getDisplayName());
 
             for (int i = 0; i < categories.size(); i++) {
-                Row row = hidden.getRow(i+1);
+                Row row = hidden.getRow(i + 1);
                 if (row == null)
-                    row = hidden.createRow(i+1);
+                    row = hidden.createRow(i + 1);
                 row.createCell(0).setCellValue(categories.get(i));
             }
 
@@ -71,23 +71,23 @@ public class ExcelHelper {
                 paymentModes.add(pm.getDisplayName());
 
             for (int i = 0; i < paymentModes.size(); i++) {
-                Row row = hidden.getRow(i+1);
+                Row row = hidden.getRow(i + 1);
                 if (row == null)
-                    row = hidden.createRow(i+1);
+                    row = hidden.createRow(i + 1);
                 row.createCell(1).setCellValue(paymentModes.get(i));
             }
 
             // Create Named Range for Categories
             Name namedCellCat = workbook.createName();
             namedCellCat.setNameName("Categories");
-//            String catRef = "Hidden!$A$1:$A$" + categories.size();
+            // String catRef = "Hidden!$A$1:$A$" + categories.size();
             String catRef = "Hidden!$A$2:$A$" + (categories.size() + 1);
             namedCellCat.setRefersToFormula(catRef);
 
             // Create Named Range for Payment Modes
             Name namedCellMode = workbook.createName();
             namedCellMode.setNameName("PaymentModes");
-//            String modeRef = "Hidden!$B$1:$B$" + paymentModes.size();
+            // String modeRef = "Hidden!$B$1:$B$" + paymentModes.size();
             String modeRef = "Hidden!$B$2:$B$" + (paymentModes.size() + 1);
             namedCellMode.setRefersToFormula(modeRef);
 
@@ -96,7 +96,7 @@ public class ExcelHelper {
             DataValidationConstraint catConstraint = validationHelper.createFormulaListConstraint("Categories");
             CellRangeAddressList catAddrList = new CellRangeAddressList(1, 100, 2, 2);
             DataValidation catValidation = validationHelper.createValidation(catConstraint, catAddrList);
-//            catValidation.setSuppressDropDownArrow(false);
+            // catValidation.setSuppressDropDownArrow(false);
             catValidation.setShowErrorBox(true);
             sheet.addValidationData(catValidation);
 
@@ -107,8 +107,10 @@ public class ExcelHelper {
             sheet.addValidationData(payValidation);
 
             // Auto Size Columns
-            for (int i = 0; i < HEADERS.length; i++)
-                sheet.autoSizeColumn(i);
+            // Set fixed column width to avoid AWT dependency (headless mode issue)
+            for (int i = 0; i < HEADERS.length; i++) {
+                sheet.setColumnWidth(i, 15 * 256); // Fixed width approx 15 chars
+            }
 
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());
