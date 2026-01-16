@@ -29,6 +29,7 @@ import java.util.List;
 public class ExpenseController {
 
     private final ExpenseService expenseService;
+    private final com.example.budgettracker.service.UserService userService;
 
     // --- MVC Endpoints for Thymeleaf Views ---
     @GetMapping("/")
@@ -86,7 +87,20 @@ public class ExpenseController {
     @GetMapping("/settings")
     public String settings(Model model) {
         model.addAttribute("activePage", "settings");
+        // currentUser is already added by GlobalControllerAdvice
         return "settings";
+    }
+
+    @PostMapping("/settings")
+    public String updateSettings(@RequestParam String theme, @RequestParam String currency,
+            RedirectAttributes redirectAttributes) {
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        if (auth != null) {
+            userService.updatePreferences(auth.getName(), theme, currency);
+            redirectAttributes.addFlashAttribute("successMessage", "Preferences updated successfully!");
+        }
+        return "redirect:/settings";
     }
 
     @GetMapping("/showNewExpenseForm")

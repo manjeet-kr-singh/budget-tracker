@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 
-<body>
+<body th:classappend="${currentUser != null && currentUser.theme == 'DARK' ? 'dark-mode' : ''}">
 
     <div th:fragment="sidebar" id="sidebar-wrapper">
         <div class="sidebar-heading">💰 Budget Tracker</div>
@@ -79,20 +79,29 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="/js/script.js"></script>
         <!-- Theme & Currency Init -->
-        <script>
-            (function () {
-                // Theme
-                const savedTheme = localStorage.getItem('theme');
-                if (savedTheme === 'dark') {
-                    document.body.classList.add('dark-mode');
-                }
-            })();
-
+        <script th:inline="javascript">
             // Global Helper for Formatting
             window.getCurrencySymbol = function () {
-                return localStorage.getItem('currency') || '$';
+                // Server-side injection or default
+                /*[[${currentUser != null}]]*/
+                let userCurr = /*[[${currentUser != null ? currentUser.currency : 'INR'}]]*/ 'INR';
+
+                // Map codes to symbols
+                const symbols = {
+                    'USD': '$',
+                    'EUR': '€',
+                    'INR': '₹',
+                    'GBP': '£'
+                };
+                return symbols[userCurr] || userCurr;
             };
 
+            // Apply theme (fallback for immediate load if body class isn't enough or for dynamic changes? 
+            // Actually body class is handled by Thymeleaf on load.
+            // We might need to keep local storage sync if we want client-side only pages to work,
+            // but we are moving to server-side.
+        </script>
+        <script>
             window.formatCurrency = function (val) {
                 const symbol = window.getCurrencySymbol();
                 return symbol + ' ' + parseFloat(val).toFixed(2);

@@ -31,6 +31,13 @@ public class User {
     private String mobile;
     private String profilePicture;
 
+    // Preferences
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'LIGHT'")
+    private String theme = "LIGHT"; // LIGHT or DARK
+
+    @Column(nullable = false, columnDefinition = "VARCHAR(255) DEFAULT 'INR'")
+    private String currency = "INR"; // USD, EUR, INR, etc.
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
